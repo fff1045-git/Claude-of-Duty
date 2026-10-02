@@ -304,14 +304,12 @@ export class AiSystem {
     } catch {
       try { renderer.compile(scene, this.ctx.camera, this.ctx.scene); } catch { /* driver */ }
     }
-    for (const m of made) {
-      m.prime.dispose();
-      m.mat.dispose();
-    }
-    wraith.dispose();
-    geo.dispose();
-    skeleton.dispose?.();
-    return (renderer.info.programs?.length ?? 0) - before;
+    const programs = (renderer.info.programs?.length ?? 0) - before;
+    // Keep these alive until dispose(): three releases a GL program as soon as
+    // the last material using it is disposed, which would throw the warm-up away
+    // before the first real ghost ever asked for it.
+    this._ghostWarm = { made, wraith, geo, skeleton };
+    return programs;
   }
 
   /**
@@ -1171,6 +1169,16 @@ export class AiSystem {
   /* ================================================================== */
 
   dispose() {
+    if (this._ghostWarm) {
+      for (const m of this._ghostWarm.made) {
+        m.prime.dispose();
+        m.mat.dispose();
+      }
+      this._ghostWarm.wraith.dispose();
+      this._ghostWarm.geo.dispose();
+      this._ghostWarm.skeleton.dispose?.();
+      this._ghostWarm = null;
+    }
     for (const off of this._off ?? []) off();
     for (const a of this.agents) a.dispose();
     this.agents.length = 0;

@@ -24,10 +24,33 @@ const capture = params.get('capture') === '1';
 // free-run. See the long comment in src/dev/shots.js.
 const lockstep = capture && params.get('lockstep') === '1';
 
+// Mode. The title screen picks it, unless the URL already did (?mode=story&ep=2,
+// ?mode=free) or this is a capture run — captures are always the original game,
+// which is what keeps the pixel gate (tools/baseline.mjs) meaningful.
+let mode = params.get('mode') ?? (capture ? 'free' : null);
+let ep = Number(params.get('ep')) || 1;
+if (mode !== 'story' && mode !== 'free') {
+  const { showTitle } = await import('./story/title.js');
+  ({ mode, ep = 1 } = await showTitle());
+  const q = new URLSearchParams(location.search);
+  q.set('mode', mode);
+  if (mode === 'story') q.set('ep', String(ep));
+  history.replaceState(null, '', `?${q}`);
+}
+
 const config = createConfig({
   quality: params.get('q') ?? 'ultra',
   deterministic: capture,
 });
+config.mode = mode;
+if (mode === 'story') {
+  config.story = {
+    ep,
+    skipIntro: params.get('skipIntro') === '1',
+    step: Number(params.get('step')) || 0,
+    autostart: params.get('autostart') === '1', // dev / headless: no cutscene, no click gate
+  };
+}
 
 const canvas = document.getElementById('game');
 
@@ -46,6 +69,10 @@ engine
   .add(AiSystem)
   .add(UiSystem)
   .add(AudioSystem);
+
+// Story mode only: registers StorySystem and starts the intro cutscene now, so it
+// plays over the boot below. Free mode never imports src/story/index.js.
+const story = mode === 'story' ? await (await import('./story/boot.js')).prepareStory(engine, config) : null;
 
 try {
   await engine.init();
@@ -80,7 +107,23 @@ const warmup = params.get('prewarm') === '0' ? { ok: false, reason: 'disabled by
 console.info('[boot] prewarm', warmup);
 window.__PREWARM__ = warmup;
 
+if (story) await story.gate();
+
 engine.start();
+story?.begin();
+
+// Back to the title from the pause menu (not in captures, which never had one).
+if (!capture) {
+  const btns = engine.registry.peek('ui')?.menu?.resumeBtn?.parentElement;
+  if (btns) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'ow-btn';
+    b.textContent = '타이틀로';
+    b.addEventListener('click', () => (location.search = ''));
+    btns.appendChild(b);
+  }
+}
 
 // Capture harness handshake: only flag ready once a frame has actually landed.
 //
