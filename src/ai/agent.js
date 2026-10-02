@@ -98,7 +98,9 @@ export class Agent {
     this.variantName = opts.variant ?? 'vanguard';
     const def = ai.variant(this.variantName);
     this.def = def;
-    this.scale = def.variant.scale ?? 1;
+    // `opts.scale` lets a scripted spawn (the story mode's boss) be bigger than
+    // its variant without building a second soldier geometry.
+    this.scale = opts.scale ?? def.variant.scale ?? 1;
 
     /* ---------------- body ---------------- */
     const { bones, skeleton, root } = RIG.createSkeleton();
@@ -161,7 +163,7 @@ export class Agent {
         const c = phys.addCollider({
           shape: 'capsule',
           layer: phys.LAYER.ACTOR,
-          surface: 'flesh',
+          surface: opts.surface ?? 'flesh',
           owner: this,
           part,
           radius: r * this.scale,

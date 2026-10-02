@@ -17,3 +17,6 @@ revcrops/
 
 # raw story art (Codex originals); the game ships public/story/*.webp
 art/
+
+# local preview config
+.claude/

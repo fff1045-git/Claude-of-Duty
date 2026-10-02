@@ -161,7 +161,7 @@ export class AiSystem {
   _bootNav(ctx) {
     try {
       this._buildNav();
-      if (!this._navPending && (!ctx.config.deterministic || this.forcePopulate)) this.populate();
+      if (!this._navPending && (!ctx.config.deterministic || this.forcePopulate) && ctx.config.mode !== 'story') this.populate();
     } catch (err) {
       this._navPending = true;
       console.warn('[ai] boot nav deferred to the first frame:', err?.message ?? err);
@@ -537,6 +537,31 @@ export class AiSystem {
     return made;
   }
 
+  /**
+   * Snap a world point to the centre of the nearest walkable nav cell. Returns
+   * false (out untouched) when there is no grid yet or nothing walkable within
+   * `rings` cells. `y` keeps the search on the right storey.
+   */
+  snapToNav(x, z, y, out, rings = 8) {
+    const g = this.grid;
+    if (!g) return false;
+    const ci = g.nearest(x, z, y ?? null, rings, y === undefined || y === null ? Infinity : 2.2);
+    if (ci < 0) return false;
+    out.set(g.worldX(ci % g.nx), g.floor[ci], g.worldZ((ci / g.nx) | 0));
+    return true;
+  }
+
+  /** Take an agent out of play for good: off the list, out of its squad, freed. */
+  remove(agent) {
+    const i = this.agents.indexOf(agent);
+    if (i >= 0) this.agents.splice(i, 1);
+    for (const s of this.squads) {
+      const j = s.members?.indexOf(agent) ?? -1;
+      if (j >= 0) s.members.splice(j, 1);
+    }
+    agent.dispose();
+  }
+
   createSquad() {
     const s = new Squad(this.rng.fork());
     this.squads.push(s);
@@ -726,7 +751,7 @@ export class AiSystem {
       // Populate the level for normal play. Capture runs stay empty unless a
       // shot asks for a tableau, so nobody's screenshot gets a stray patrol
       // wandering through it.
-      if (!this._navPending && (!ctx.config.deterministic || this.forcePopulate)) this.populate();
+      if (!this._navPending && (!ctx.config.deterministic || this.forcePopulate) && ctx.config.mode !== 'story') this.populate();
     }
 
     // Per-frame A* budget: see requestPath().
@@ -744,6 +769,7 @@ export class AiSystem {
         alive++;
       } else if (a.deadTime !== undefined) {
         a.deadTime += dt;
+        a.afterDeath?.(dt);
         if (this.debugLog && a.ragdoll && !a._loggedDoll && a.deadTime > 1.2) {
           a._loggedDoll = true;
           const b = a.ragdoll.aabb;
