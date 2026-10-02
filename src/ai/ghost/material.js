@@ -111,7 +111,7 @@ const FRAG_SHADE = /* glsl */ `
 #ifdef GHOST_DARK
   // black smoke: a near-opaque dark body, only the silhouette burns like an ember
   float feet = smoothstep(0.0, 0.6, vGP.y);
-  outgoingLight = uColor * (0.5 + 0.8 * n) + (uRim * pow(fres, 3.0) * 1.2 + uRim * edge * 3.0) * uGain * flick;
+  outgoingLight = uColor * (0.5 + 0.8 * n) + (uRim * pow(fres, 2.2) * 1.5 + uRim * edge * 3.0) * uGain * flick;
   diffuseColor.a = uOpacity * feet * clamp(0.7 + 0.3 * n, 0.0, 1.0);
 #else
   // pale and see-through: bands crawl up the body, the rim carries the shape,
@@ -172,7 +172,7 @@ export function makeGhostMaterial(o = {}) {
       .replace('#include <common>', `#include <common>\n${FRAG_PARS}`)
       .replace('#include <opaque_fragment>', FRAG_SHADE);
   };
-  m.customProgramCacheKey = () => (dark ? 'ow-ghost-dark-v2' : 'ow-ghost-v2');
+  m.customProgramCacheKey = () => (dark ? 'ow-ghost-dark-v3' : 'ow-ghost-v3');
   return m;
 }
 

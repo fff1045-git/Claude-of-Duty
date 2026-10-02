@@ -22,7 +22,7 @@ export function createOfficerBody(agent, ctx, opts = {}) {
   const prime = createDepthPrime(mesh, mat);
   const u = mat.userData.ghost;
 
-  const eyeGeo = new THREE.SphereGeometry(0.016, 8, 6);
+  const eyeGeo = new THREE.SphereGeometry(0.022, 8, 6);
   const eyeMat = new THREE.MeshBasicMaterial({
     color: new THREE.Color(9, 0.35, 0.2),
     transparent: true,

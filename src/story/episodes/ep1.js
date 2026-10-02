@@ -14,6 +14,7 @@ export default {
   clock: '19:05',
   hour: 19.08,
   weather: { fogDensity: 1.6 },
+  exposure: 0.4, // EV, positive = darker (render.setExposureBias)
   spawn: { at: [0.4, 40], yaw: 0 },
   next: 2,
 

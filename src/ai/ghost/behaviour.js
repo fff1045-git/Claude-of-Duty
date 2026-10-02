@@ -32,9 +32,20 @@ export const GHOST_TUNING = {
   },
   officer: {
     health: 2000, walk: 1.3, fireRate: 5, spread: 0.06, damage: 10,
-    scatter: false, blinkUnseen: 2.5, auraDps: 20, mist: [0.03, 0.025, 0.025], additiveMist: false,
+    scatter: false, blinkUnseen: 2.5, auraDps: 20, mist: [0.9, 0.07, 0.04], additiveMist: true,
   },
 };
+
+/**
+ * Ghost brightness for the current light: brighter at dusk (no exposure lift to
+ * lean on) and pushed up when story mode darkens the night with an exposure
+ * bias, so a ghost still glows in a street that has gone properly dark.
+ */
+export function ghostGain(ctx) {
+  const day = ctx.peek('ai')?._daylight?.() ?? 0;
+  const ev = ctx.peek('render')?.settings?.exposureBias ?? 0;
+  return DEFAULT_GAIN * (1 + 3 * day) * Math.pow(2, 0.7 * Math.max(0, ev));
+}
 
 const RISE_TIME = 1.2;
 const BLINK_OUT = 0.35;
@@ -410,9 +421,7 @@ export class GhostAgent extends Agent {
       this.body.setGlitch(this.glitchT > 0 ? 0.9 : 0);
       this.body.setFlicker(Math.sin(t * 0.7 + this.id * 1.7) > 0.93 ? 1 : 0.15);
     }
-    // brighter at dusk, when the exposure is not lifting the shadows for us
-    const day = this.ai._daylight?.() ?? 0;
-    this.body.setGain(DEFAULT_GAIN * (1 + 3 * day));
+    this.body.setGain(ghostGain(this.ctx));
 
     this.mistT -= dt;
     if (this.mistT <= 0) {

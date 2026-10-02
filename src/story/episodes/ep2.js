@@ -15,6 +15,9 @@ export default {
   clock: '22:00',
   hour: 22.0,
   weather: { fogDensity: 2.8 },
+  // the auto-exposure lifts a moonlit street to overcast-evening brightness;
+  // pull it back down so night reads as night
+  exposure: 2.4,
   spawn: { at: [3, -24], yaw: Math.PI },
   next: 3,
 

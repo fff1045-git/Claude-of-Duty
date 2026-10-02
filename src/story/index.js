@@ -49,6 +49,7 @@ export class StorySystem {
     const sky = ctx.get('sky');
     sky.setTimeOfDay(this.ep.hour);
     if (this.ep.weather) sky.setWeather(this.ep.weather);
+    ctx.peek('render')?.setExposureBias?.(this.ep.exposure ?? 0);
     this._placePlayer();
 
     const ui = ctx.get('ui');
@@ -185,6 +186,7 @@ export class StorySystem {
         if (step.hour !== undefined) sky.setTimeOfDay(step.hour);
         if (step.weather) sky.setWeather(step.weather);
         if (step.rate !== undefined) sky.setTimeRate(step.rate);
+        if (step.exposure !== undefined) ctx.peek('render')?.setExposureBias?.(step.exposure);
       },
       bossBar: (f) => s.hud.boss(f, s.bossName),
       banish() {
@@ -251,6 +253,7 @@ export class StorySystem {
     if (this.state !== 'play') return;
     this.state = 'dead';
     this._lock();
+    this.hud.setVisible(false);
     this.ctx.time.scale = 0.3;
     setTimeout(() => {
       this.ctx.time.scale = 0;

@@ -14,7 +14,7 @@
 
 import * as THREE from 'three';
 import { createWraithBody } from '../ai/ghost/bodies/wraith.js';
-import { DEFAULT_GAIN } from '../ai/ghost/material.js';
+import { ghostGain } from '../ai/ghost/behaviour.js';
 
 const FADE_IN = 0.8;
 const FADE_OUT = 1.0;
@@ -60,8 +60,7 @@ export class Haunt {
 
   update(dt) {
     const t = this.ctx.time.elapsed;
-    const day = this.ctx.peek('ai')?._daylight?.() ?? 0;
-    const gain = DEFAULT_GAIN * (1 + 3 * day);
+    const gain = ghostGain(this.ctx);
     const pl = this.story.playerFeet(this._p);
     for (let i = this.apparitions.length - 1; i >= 0; i--) {
       const a = this.apparitions[i];
