@@ -17,6 +17,31 @@ npm run dev          # http://127.0.0.1:5173
 Click the canvas to lock the cursor. WASD move, mouse aim, LMB fire, RMB ADS,
 R reload, Shift sprint, Ctrl crouch, Space jump, Q/E lean, Esc release.
 
+## Story mode — 「사르말의 원혼」 (this fork)
+
+A title screen now opens before boot: **스토리 모드** (story) or **자유 전투**
+(the original free-play street fight, unchanged). The story is three Korean-language
+episodes on the same market street — a missing recon squad, a radio that picks up
+voices it should not, and the ghosts of a covered-up massacre.
+
+| | |
+|---|---|
+| EP1 「잡음」 | dusk, human insurgents, the first apparitions |
+| EP2 「일어선 자들」 | night, the dead rise; restart three radio relays under attack |
+| EP3 「원혼」 | midnight to dawn, ghost waves and the Black Officer boss |
+
+- Intro cutscenes play while the engine boots; clearing an episode unlocks the next.
+- URLs: `?mode=story&ep=2`, `?mode=free`. Dev: `&step=N` jumps to a step,
+  `&autostart=1` skips the cutscene and click gate, `__STORY__.skip()` in the console.
+- Episodes are data (`src/story/episodes/`), run by `src/story/director.js`
+  (`node src/story/selftest.mjs`).
+- Ghosts (`src/ai/ghost/`) reuse the soldier rig and hitboxes with their own brain;
+  their look is a swappable body (`bodies/`) so a generated mesh can replace the
+  code-built one later.
+- The cutscene and title art in `public/story/` was generated with Codex imagegen —
+  the one exception to "no art assets", and story mode only. `?capture=1` always
+  boots free play, so the capture tools and the pixel gate are unaffected.
+
 ## What's in it
 
 | subsystem | what it does |
