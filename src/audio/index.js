@@ -39,6 +39,7 @@ import {
   heartbeat, cloth,
 } from './foley.js';
 import { bark as voxBark, barkFor } from './vox.js';
+import { ghostWhisper, ghostSwell, ghostDrone, radioSquelch } from './ghost.js';
 import { classifySpace } from './ir.js';
 
 const PROBE_RAYS = 9;
@@ -59,6 +60,7 @@ const BUS_FOR = {
   hitmarker: 'ui', headshot: 'ui', kill: 'ui', armour: 'ui', damage: 'ui',
   grenade_warn: 'ui', regen: 'ui', lowhealth: 'ui',
   bark: 'voice', ambient: 'ambience',
+  ghost_whisper: 'voice', ghost_swell: 'foley', ghost_drone: 'ambience', radio: 'ui',
 };
 
 /** Finite Vector3-ish check — one NaN from any subsystem must not throw. */
@@ -354,6 +356,11 @@ export class AudioSystem {
       case 'heartbeat': return heartbeat(actx, bank, rng, { when, level: o.level });
       case 'bark': return voxBark(actx, bank, rng, { when, bark: o.bark, f0: o.f0, tract: o.tract, level: o.level, radio: o.radio });
       case 'ambient': return ambientOneShot(actx, bank, rng, o.which, { when, level: o.level });
+      // story mode (src/audio/ghost.js)
+      case 'ghost_whisper': return ghostWhisper(actx, bank, rng, { when, level: o.level });
+      case 'ghost_swell': return ghostSwell(actx, bank, rng, { when, level: o.level });
+      case 'ghost_drone': return ghostDrone(actx, bank, rng, { when, level: o.level });
+      case 'radio': return radioSquelch(actx, bank, rng, { when, level: o.level });
       default: return uiSound(actx, bank, rng, kind, { when, level: o.level });
     }
   }

@@ -619,6 +619,54 @@ export class FxSystem {
     this.hazeSys.emit(this.now, x, y, z, radius, grow, life, strength, P.RING, this.rng.float());
   }
 
+  /**
+   * Coloured mist puffs — the story mode's ghost trails. Unlike the smoke
+   * helpers this takes a colour. World space.
+   *   o: { r, g, b, intensity, count, radius, spread, height, rise, gravity,
+   *        life, alpha, additive }
+   * Additive puffs glow (pale ghosts); lit puffs read as smoke (the officer).
+   */
+  mist(x, y, z, o = {}) {
+    this.now = this.ctx.time.elapsed;
+    const rng = this.rng;
+    const n = o.count ?? 3;
+    const rad = o.radius ?? 0.35;
+    const spread = o.spread ?? 0.4;
+    const emit = o.additive ? this.emitAdd : this.emitLit;
+    for (let i = 0; i < n; i++) {
+      const s = resetSpawn();
+      const a = rng.float() * 6.283;
+      const r = rng.float() * spread;
+      s.x = x + Math.cos(a) * r;
+      s.y = y + rng.float() * (o.height ?? 0.3);
+      s.z = z + Math.sin(a) * r;
+      s.vx = Math.cos(a) * 0.12;
+      s.vy = o.rise ?? 0.25;
+      s.vz = Math.sin(a) * 0.12;
+      s.tile = i % 2 ? P.MIST : P.SMOKE_A;
+      s.size0 = rad * 0.6;
+      s.size1 = rad * 2.4;
+      s.sizeCurve = 0.6;
+      s.life = (o.life ?? 1.6) * rng.range(0.7, 1.3);
+      s.drag = 1.5;
+      s.gravity = o.gravity ?? 0.05;
+      s.rot = rng.float() * 6.283;
+      s.spin = rng.signed() * 0.6;
+      s.r0 = s.r1 = o.r ?? 0.5;
+      s.g0 = s.g1 = o.g ?? 0.8;
+      s.b0 = s.b1 = o.b ?? 1.0;
+      s.i0 = o.intensity ?? 1;
+      s.i1 = 0;
+      s.alpha = o.alpha ?? 0.35;
+      s.alphaCurve = 1.2;
+      s.soft = 0.4;
+      s.turb = 0.3;
+      s.turbFreq = 0.8;
+      s.seed = rng.float();
+      emit(s);
+    }
+  }
+
   addSmokeColumn(x, y, z, o) {
     return this.ambience.addColumn(x, y, z, o);
   }

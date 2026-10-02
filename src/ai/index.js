@@ -45,6 +45,9 @@ import { NavGrid, CoverMap } from './nav.js';
 import { Agent, STATE } from './agent.js';
 import { Squad } from './squad.js';
 import { GroundShadows } from './grounding.js';
+import { GhostAgent } from './ghost/behaviour.js';
+import { makeGhostMaterial, createDepthPrime } from './ghost/material.js';
+import { createWraithBody } from './ghost/bodies/wraith.js';
 
 export class AiSystem {
   static id = 'ai';
@@ -259,9 +262,56 @@ export class AiSystem {
     } catch (err) {
       out.error = String(err?.message ?? err);
     }
+    // Story mode only: the ghost programs, so the first ghost to rise does not
+    // stall the frame it appears on. Free mode never builds these materials.
+    if (out.ok && this.ctx.config.mode === 'story') {
+      try {
+        out.ghostPrograms = await this._prewarmGhosts();
+      } catch (err) {
+        out.ghostError = String(err?.message ?? err);
+      }
+    }
     out.ms = Math.round(performance.now() - t0);
     console.info(`[ai] prewarmMaterials ${JSON.stringify(out)}`);
     return out;
+  }
+
+  /** Compile the ghost shader variants: skinned (pale, dark, depth prime) and plain (wraith). */
+  async _prewarmGhosts() {
+    const r = this.ctx.peek('render');
+    const renderer = r?.renderer;
+    if (!renderer) return 0;
+    const before = renderer.info.programs?.length ?? 0;
+    const scene = new THREE.Scene();
+    const { skeleton, root } = RIG.createSkeleton();
+    const geo = this._dummySkinGeometry();
+    scene.add(root);
+    const made = [];
+    for (const dark of [false, true]) {
+      const mat = makeGhostMaterial({ dark });
+      const mesh = new THREE.SkinnedMesh(geo, mat);
+      mesh.frustumCulled = false;
+      mesh.bind(skeleton);
+      const prime = createDepthPrime(mesh, mat);
+      prime.mesh.frustumCulled = false;
+      scene.add(mesh);
+      made.push({ mat, prime });
+    }
+    const wraith = createWraithBody(this.ctx);
+    scene.add(wraith.object3D);
+    try {
+      await renderer.compileAsync(scene, this.ctx.camera, this.ctx.scene);
+    } catch {
+      try { renderer.compile(scene, this.ctx.camera, this.ctx.scene); } catch { /* driver */ }
+    }
+    for (const m of made) {
+      m.prime.dispose();
+      m.mat.dispose();
+    }
+    wraith.dispose();
+    geo.dispose();
+    skeleton.dispose?.();
+    return (renderer.info.programs?.length ?? 0) - before;
   }
 
   /**
@@ -535,6 +585,16 @@ export class AiSystem {
     }
     console.info(`[ai] garrison: ${made} enemies in ${squads} squads`);
     return made;
+  }
+
+  /**
+   * Story mode: raise a ghost. `kind` is 'soldier' or 'officer' (see
+   * ghost/behaviour.js); the body it wears comes from ghost/bodies.
+   */
+  spawnGhost(kind, position, yaw = 0, opts = {}) {
+    const a = new GhostAgent(this, { variant: opts.variant ?? 'vanguard', position, yaw, kind, ...opts });
+    this.agents.push(a);
+    return a;
   }
 
   /**
